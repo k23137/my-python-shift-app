@@ -51,7 +51,7 @@
                     <tr>
                         <th>No.</th> {# これのみ残す #}
                         {# <th>ID</th> #}           {# データベースのIDヘッダーを非表示 #}
-                        <th>ユーザーID</th>
+                        <th>ユーザーID</th>       {# ユーザーIDヘッダーは残す #}
                         <th>管理者</th>
                         <th>操作</th>
                     </tr>
@@ -61,7 +61,7 @@
                     <tr>
                         <td>{{ loop.index }}</td> {# No.を表示 #}
                         {# <td>{{ user[0] }}</td> #} {# データベースのIDデータ（例: 1, 4）を非表示 #}
-                        <td>{{ user[1] }}</td>
+                        <td>{{ user[1] }}</td> {# ユーザーIDデータ（例: Yokoyama, tathunami）を表示する #}
                         <td>{% if user[2] %}はい{% else %}いいえ{% endif %}</td>
                         <td>
                             {% if user[0] != current_user.id %} {# ログイン中の自分自身は削除できないように、user[0] (DBのID)は削除ボタンのactionで参照するため残す #}
