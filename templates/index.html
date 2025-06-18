@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Webシフト管理</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,7 +17,7 @@
             padding: 25px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            max-width: 800px;
+            max-width: 800px; /* 広めに設定 */
             margin: 20px auto;
         }
         h2 {
@@ -24,10 +25,13 @@
             color: #0056b3;
             margin-bottom: 25px;
         }
-        p {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #666;
+        .user-info {
+            text-align: right;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+        .user-info a {
+            margin-left: 10px;
         }
         .control-panel {
             display: flex;
@@ -76,9 +80,10 @@
             padding: 10px;
             text-align: center;
             white-space: nowrap;
-            /* ★追加または修正: 行の高さとパディングを固定する★ */
-            height: 40px; /* 例: 行全体の高さを固定する */
-            box-sizing: border-box; /* paddingを含めて高さが計算されるように */
+            height: 40px;
+            box-sizing: border-box;
+            vertical-align: middle;
+            line-height: 1;
         }
         .shift-table th {
             background-color: #e9ecef;
@@ -87,19 +92,18 @@
         /* クリック可能なセルのスタイル */
         .shift-table td.shift-cell {
             cursor: pointer;
-            user-select: none; /* テキスト選択を無効にする */
-            font-size: 1.5rem; /* ★○を大きくする調整点★ */
-            font-weight: bold; /* 少し太字にすると見やすいかも */
-            color: #007bff; /* ★色を付けて視認性アップ（例: 青）★ */
-            vertical-align: middle; /* 垂直方向中央揃えを確実に */
-            transition: background-color 0.1s ease; /* 背景色の変化を滑らかに */
+            user-select: none;
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            transition: background-color 0.1s ease;
         }
         .shift-table td.shift-cell:hover {
             background-color: #e0f2f7;
         }
         /* ★追加: ○が入ったセルの背景色★ */
         .shift-table td.shift-cell.active {
-            background-color: #e0f7fa; /* 薄い水色など、目立つ色 */
+            background-color: #e0f7fa;
         }
         .message {
             margin-top: 20px;
@@ -135,38 +139,33 @@
         .empty-row td {
             border: none;
         }
-        .shift-table th, .shift-table td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-            white-space: nowrap;
-            /* ★ここを修正/追加: 行の高さとパディングを固定する★ */
-            height: 40px; /* セル全体の高さを固定（paddingとコンテンツを含む） */
-            box-sizing: border-box; /* paddingを含めて高さが計算されるように */
-            vertical-align: middle; /* 垂直方向中央揃えをデフォルトで設定 */
-            line-height: 1; /* ★重要: 行間をフォントサイズと同じにする（これでブレにくくなる）★ */
-        }
-        .shift-table td.shift-cell {
-            cursor: pointer;
-            user-select: none;
-            font-size: 24px; /* ★remからpxに変更。好みのサイズに調整★ */
-            font-weight: bold;
-            color: #007bff;
-            transition: background-color 0.1s ease;
-            /* vertical-align は親 td に設定したので不要 */
-        }
-        .shift-table td.shift-cell:hover {
-            background-color: #e0f2f7;
-        }
-        /* ★追加: ○が入ったセルの背景色★ */
-        .shift-table td.shift-cell.active {
-            background-color: #e0f7fa;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Webシフト管理</h2>
+        <div class="user-info">
+            {% if current_user.is_authenticated %}
+                こんにちは、{{ current_user.username }}さん！
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary btn-sm ml-2">ログアウト</a>
+                {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin.settings_auth') }}" class="btn btn-outline-warning btn-sm ml-2">設定</a>
+                {% endif %}
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">ログイン</a>
+            {% endif %}
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} flash-message" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <h2 class="text-center mb-4">Webシフト管理</h2>
 
         <div class="control-panel">
             <label for="startDate">シフト開始日:</label>
@@ -174,13 +173,12 @@
             <button onclick="generateShift()">シフト生成</button>
             <button onclick="setNextShiftDate()">次のシフト</button>
             <button onclick="clearShift()">全クリア</button>
-        </div>
+            <button onclick="takeShiftScreenshot()">シフトを画像で保存</button> </div>
 
         <div id="loading" class="loading">処理中...</div>
         <div id="message" class="message"></div>
 
-        <div class="shift-table-container">
-            <table class="shift-table" id="shiftTable">
+        <div class="shift-table-container" id="shiftTableContainer"> <table class="shift-table" id="shiftTable">
                 <thead>
                     <tr>
                         <th>日付</th>
@@ -196,6 +194,10 @@
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script> 
     <script>
         const startDateInput = document.getElementById('startDate');
         const shiftTableBody = document.getElementById('shiftTable').getElementsByTagName('tbody')[0];
@@ -204,22 +206,15 @@
         
         const STAFF_NAMES = {{ staff_names | tojson }};
 
-        // 初期化処理
         document.addEventListener('DOMContentLoaded', function() {
-            // Pythonバックエンドからデフォルトの開始日を取得
-            fetch('/api/initial_data')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        showMessage(data.error, 'error');
-                    } else {
-                        startDateInput.value = data.defaultStartDate;
-                        loadShiftData(); // 初期表示時に既存シフトをロード
-                    }
-                })
-                .catch(error => {
-                    showMessage("初期データの取得に失敗しました: " + error.message, 'error');
-                });
+            // 初期ロード時にシフトデータを表示
+            loadShiftData();
+            // デフォルトの開始日を今日に設定
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            startDateInput.value = `${year}-${month}-${day}`;
         });
 
         function showLoading() {
@@ -237,12 +232,9 @@
             messageDiv.style.display = 'block';
         }
 
-        /**
-         * シフトデータを生成し、テーブルに表示する
-         */
         function generateShift() {
             showLoading();
-            const startDate = startDateInput.value; // YYYY-MM-DD 形式
+            const startDate = startDateInput.value;
 
             if (!startDate) {
                 showMessage('シフト開始日を選択してください。', 'error');
@@ -257,13 +249,19 @@
                 },
                 body: JSON.stringify({ startDate: startDate }),
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.redirected) { // ログイン画面へのリダイレクトを検出
+                    window.location.href = response.url;
+                    return;
+                }
+                return response.json();
+            })
             .then(data => {
-                if (data.error) {
+                if (data && data.error) { // dataがnullでないことを確認
                     showMessage(data.error, 'error');
-                } else {
+                } else if (data) {
                     showMessage(data.success, 'success');
-                    loadShiftData(); // シフト生成後、テーブルを更新するためにデータを再取得
+                    loadShiftData();
                 }
                 hideLoading();
             })
@@ -273,16 +271,19 @@
             });
         }
 
-        /**
-         * DBからシフトデータを読み込み、テーブルに表示する
-         */
         function loadShiftData() {
             showLoading();
             fetch('/api/get_shift_data')
-                .then(response => response.json())
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        return;
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     hideLoading();
-                    if (data.error) {
+                    if (data && data.error) {
                         showMessage(data.error, 'error');
                         return;
                     }
@@ -294,10 +295,6 @@
                 });
         }
 
-        /**
-         * 取得したデータに基づいてシフトテーブルをレンダリングする
-         * @param {Array<Object>} shiftData - シフトデータの配列
-         */
         function renderShiftTable(shiftData) {
             shiftTableBody.innerHTML = '';
 
@@ -315,52 +312,50 @@
                     }
                 } else {
                     const row = shiftTableBody.insertRow();
-                    // 日付セル (月日表示)
                     row.insertCell().textContent = rowData.date;
-                    // 曜日セル
                     row.insertCell().textContent = rowData.dayOfWeek;
 
-                    // スタッフごとのシフトセル
                     STAFF_NAMES.forEach((staffName, colIndex) => {
                         const cell = row.insertCell();
-                        cell.className = 'shift-cell'; // クリック可能なセルとしてクラスを追加
-                        const currentStatus = rowData.checkboxes[colIndex] || ''; // '○'または''
-                        cell.textContent = currentStatus; // 現在の状態を表示
+                        cell.className = 'shift-cell';
+                        const currentStatus = rowData.checkboxes[colIndex] || '';
+                        cell.textContent = currentStatus;
 
-                        // ★追加: ○が入っていたら active クラスを追加して背景色を適用★
                         if (currentStatus === '○') {
                             cell.classList.add('active');
                         }
 
-                        // セルクリックイベントを設定
                         cell.onclick = function() {
-                            const newStatus = this.textContent === '○' ? '' : '○'; // ○と空を切り替え
-                            this.textContent = newStatus; // UIを即座に更新
+                            const newStatus = this.textContent === '○' ? '' : '○';
+                            this.textContent = newStatus;
 
-                            // ★追加: UI更新時に active クラスも切り替える★
                             if (newStatus === '○') {
                                 this.classList.add('active');
                             } else {
                                 this.classList.remove('active');
                             }
 
-                            // PythonバックエンドのAPIを呼び出してDBを更新
                             fetch('/api/update_checkbox', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                 },
                                 body: JSON.stringify({
-                                    date: rowData.rawDate, // DB更新用に元のYYYY-MM-DD形式を渡す
-                                    staffName: staffName, // クリックされたスタッフの名前
+                                    date: rowData.rawDate,
+                                    staffName: staffName,
                                     status: newStatus
                                 }),
                             })
-                            .then(response => response.json())
+                            .then(response => {
+                                if (response.redirected) {
+                                    window.location.href = response.url;
+                                    return;
+                                }
+                                return response.json();
+                            })
                             .then(data => {
-                                if (data.error) {
+                                if (data && data.error) {
                                     showMessage(data.error, 'error');
-                                    // エラー時はUIを元に戻す
                                     this.textContent = (newStatus === '○' ? '' : '○');
                                     if (this.textContent === '○') {
                                         this.classList.add('active');
@@ -371,7 +366,6 @@
                             })
                             .catch(error => {
                                 showMessage("シフト更新エラー: " + error.message, 'error');
-                                // エラー時はUIを元に戻す
                                 this.textContent = (newStatus === '○' ? '' : '○');
                                 if (this.textContent === '○') {
                                     this.classList.add('active');
@@ -410,11 +404,17 @@
                 fetch('/api/clear_shift', {
                     method: 'POST'
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        return;
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    if (data.error) {
+                    if (data && data.error) {
                         showMessage(data.error, 'error');
-                    } else {
+                    } else if (data) {
                         showMessage(data.success, 'success');
                         shiftTableBody.innerHTML = '';
                     }
@@ -427,6 +427,33 @@
             } else {
                 showMessage("削除はキャンセルされました。", 'info');
             }
+        }
+
+        // ★スクリーンショット機能の追加★
+        function takeShiftScreenshot() {
+            showLoading();
+            const input = document.getElementById('shiftTableContainer'); // スクリーンショットを撮る要素のID
+            
+            html2canvas(input, {
+                scale: 2, // 解像度を上げる (Retinaディスプレイ対応など)
+                logging: false, // コンソールにログを出さない
+                useCORS: true // 外部リソースがある場合に対応
+            }).then(function(canvas) {
+                // 画像をダウンロード
+                const link = document.createElement('a');
+                link.download = 'シフト表_' + new Date().toISOString().split('T')[0] + '.png';
+                link.href = canvas.toDataURL('image/png');
+                document.body.appendChild(link); // 一時的にDOMに追加
+                link.click(); // クリックしてダウンロードをトリガー
+                document.body.removeChild(link); // リンクを削除
+
+                showMessage('シフト表が画像として保存されました！', 'success');
+                hideLoading();
+            }).catch(function(error) {
+                showMessage('スクリーンショットの保存に失敗しました: ' + error.message, 'error');
+                hideLoading();
+                console.error('html2canvas error:', error);
+            });
         }
     </script>
 </body>

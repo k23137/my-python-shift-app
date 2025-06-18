@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block title %}ログイン{% endblock %}
+{% block content %}
+    <div class="card p-4 mx-auto" style="max-width: 400px;">
+        <h2 class="card-title text-center mb-4">ログイン</h2>
+        <form method="POST" action="{{ url_for('auth.login') }}"> {# Blueprint名を追加 #}
+            {{ form.csrf_token }}
+            <div class="form-group">
+                {{ form.username.label(class="form-control-label") }}
+                {{ form.username(class="form-control") }}
+                {% if form.username.errors %}
+                    {% for error in form.username.errors %}
+                        <small class="text-danger">{{ error }}</small>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form.password.label(class="form-control-label") }}
+                {{ form.password(class="form-control") }}
+                {% if form.password.errors %}
+                    {% for error in form.password.errors %}
+                        <small class="text-danger">{{ error }}</small>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            {{ form.submit(class="btn btn-primary btn-block") }}
+        </form>
+    </div>
+{% endblock %}

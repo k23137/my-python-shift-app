@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block title %}設定{% endblock %}
+{% block content %}
+    <div class="container">
+        <h2 class="text-center mb-4">設定画面</h2>
+
+        <div class="card mb-4 p-4">
+            <h4 class="card-title mb-3">ユーザー追加</h4>
+            <form method="POST" action="{{ url_for('admin.settings') }}"> {# Blueprint名を追加 #}
+                {{ add_user_form.csrf_token }}
+                <input type="hidden" name="form_name" value="add_user">
+                <div class="form-group">
+                    {{ add_user_form.username.label(class="form-control-label") }}
+                    {{ add_user_form.username(class="form-control") }}
+                    {% if add_user_form.username.errors %}
+                        {% for error in add_user_form.username.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ add_user_form.password.label(class="form-control-label") }}
+                    {{ add_user_form.password(class="form-control") }}
+                    {% if add_user_form.password.errors %}
+                        {% for error in add_user_form.password.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ add_user_form.confirm_password.label(class="form-control-label") }}
+                    {{ add_user_form.confirm_password(class="form-control") }}
+                    {% if add_user_form.confirm_password.errors %}
+                        {% for error in add_user_form.confirm_password.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="form-group form-check">
+                    {{ add_user_form.is_admin(class="form-check-input") }}
+                    {{ add_user_form.is_admin.label(class="form-check-label") }}
+                </div>
+                {{ add_user_form.submit(class="btn btn-primary") }}
+            </form>
+        </div>
+
+        <div class="card p-4">
+            <h4 class="card-title mb-3">登録済みユーザー</h4>
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ユーザーID</th>
+                        <th>管理者</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user[0] }}</td>
+                        <td>{{ user[1] }}</td>
+                        <td>{% if user[2] %}はい{% else %}いいえ{% endif %}</td>
+                        <td>
+                            {% if user[0] != current_user.id %} {# ログイン中の自分自身は削除できないように #}
+                            <form method="POST" action="{{ url_for('admin.delete_user', user_id=user[0]) }}" onsubmit="return confirm('本当にこのユーザーを削除しますか？');" style="display:inline;"> {# Blueprint名を追加 #}
+                                <button type="submit" class="btn btn-danger btn-sm">削除</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('shifts.index') }}" class="btn btn-secondary">シフト表に戻る</a> {# Blueprint名を追加 #}
+        </div>
+    </div>
+{% endblock %}
