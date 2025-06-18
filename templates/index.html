@@ -179,34 +179,19 @@
         <div id="message" class="message"></div>
 
         <div class="shift-table-container" id="shiftTableContainer"> 
-            <table class="table table-striped table-hover">
-    <thead>
-        <tr>
-            <th>No.</th> {# 新しく追加 #}
-            <th>ID</th>
-            <th>ユーザーID</th>
-            <th>管理者</th>
-            <th>操作</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for user in users %}
-        <tr>
-            <td>{{ loop.index }}</td> {# ★追加: ループのインデックスを表示★ #}
-            <td>{{ user[0] }}</td>
-            <td>{{ user[1] }}</td>
-            <td>{% if user[2] %}はい{% else %}いいえ{% endif %}</td>
-            <td>
-                {% if user[0] != current_user.id %}
-                <form method="POST" action="{{ url_for('admin.delete_user', user_id=user[0]) }}" onsubmit="return confirm('本当にこのユーザーを削除しますか？');" style="display:inline;">
-                    <button type="submit" class="btn btn-danger btn-sm">削除</button>
-                </form>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+            <table class="shift-table" id="shiftTable">
+                <thead>
+                    <tr>
+                        <th>日付</th>
+                        <th>曜日</th>
+                        {% for staff in staff_names %}
+                        <th>{{ staff }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
         </div>
     </div>
 
