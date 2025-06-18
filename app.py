@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, g
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, g, session
 from datetime import date, timedelta
 import os
 import psycopg2
@@ -29,6 +29,9 @@ app = Flask(__name__)
 # --- アプリケーション設定 ---
 app.config.from_object(Config) # config.py から設定を読み込む
 
+# セッションタイムアウトの設定 (5分)
+app.permanent_session_lifetime = timedelta(minutes=5) 
+
 # --- Flask拡張機能の初期化 ---
 babel = Babel(app)
 
@@ -41,7 +44,8 @@ login_manager.login_view = 'auth.login' # ログインビューのブループ�
 def load_user(user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username, password_hash, is_admin FROM users WHERE id = %s", (user_id,)) # PostgreSQLは?ではなく%s
+    # PostgreSQLではプレースホルダーは%s
+    cursor.execute("SELECT id, username, password_hash, is_admin FROM users WHERE id = %s", (user_id,)) 
     user_data = cursor.fetchone()
     conn.close()
     if user_data:
@@ -54,11 +58,8 @@ def before_request():
     g.locale = request.accept_languages.best_match(['ja', 'en']) or 'ja'
     g.timezone = 'Asia/Tokyo' 
 
-# ★重要★
-# @babel.localeselector および @babel.timezoneselector デコレーターは削除しました。
-# これらは、g.locale / g.timezone を設定する方式では不要であり、
-# Flask-BabelのバージョンによってはAttributeErrorを引き起こすためです。
-# 代わりに、Babelはg.locale / g.timezoneを自動的に使用します。
+# Flask-Babelはg.localeとg.timezoneを自動的に使用します。
+# @babel.localeselector や @babel.timezoneselector デコレーターは削除しました。
 
 # --- Blueprintの登録 ---
 app.register_blueprint(auth_bp)
@@ -71,4 +72,5 @@ with app.app_context():
 
 if __name__ == '__main__':
     # 開発用サーバーを実行
+    # debug=True は自動リロード機能などを提供しますが、本番環境ではFalseにしてください
     app.run(debug=True)

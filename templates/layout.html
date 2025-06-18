@@ -27,5 +27,35 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // サーバーサイドのタイムアウト時間と同じに設定 (ミリ秒単位)
+        const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5分 = 300000ミリ秒
+
+        let timeoutId; // タイマーのID
+
+        // タイムアウトをリセットする関数
+        function resetTimeout() {
+            clearTimeout(timeoutId); // 既存のタイマーをクリア
+            timeoutId = setTimeout(logoutUser, SESSION_TIMEOUT_MS); // 新しいタイマーを設定
+        }
+
+        // ログアウト処理を実行する関数
+        function logoutUser() {
+            // アラートを表示して、ユーザーをログアウトページへリダイレクト
+            alert('5分間操作がなかったため、自動的にログアウトしました。');
+            // 現在のパスをnextパラメータとして渡し、ログイン後に元のページに戻れるように
+            window.location.href = "{{ url_for('auth.logout', next=request.path) }}"; 
+        }
+
+        // ページが読み込まれたらタイマーをセット
+        document.addEventListener('DOMContentLoaded', resetTimeout);
+
+        // ユーザーの操作（マウス移動、キーボード入力、タッチ）があればタイマーをリセット
+        document.addEventListener('mousemove', resetTimeout);
+        document.addEventListener('keypress', resetTimeout);
+        document.addEventListener('click', resetTimeout);
+        document.addEventListener('scroll', resetTimeout);
+        document.addEventListener('touchstart', resetTimeout); // スマホのタッチ操作
+    </script>
 </body>
 </html>
