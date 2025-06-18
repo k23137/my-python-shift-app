@@ -45,13 +45,13 @@
         </div>
 
         <div class="card p-4">
-        <h4 class="card-title mb-3">登録済みユーザー</h4>
+            <h4 class="card-title mb-3">登録済みユーザー</h4>
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
                         <th>No.</th> {# これのみ残す #}
-                        {# <th>ID</th> #}           {# ★削除またはコメントアウト★ #}
-                        {# <th>ユーザーID</th> #}    {# ★削除またはコメントアウト★ #}
+                        {# <th>ID</th> #}           {# データベースのIDヘッダーを非表示 #}
+                        {# <th>ユーザーID</th> #}    {# ユーザーIDヘッダーを非表示 #}
                         <th>管理者</th>
                         <th>操作</th>
                     </tr>
@@ -60,12 +60,11 @@
                     {% for user in users %}
                     <tr>
                         <td>{{ loop.index }}</td> {# No.を表示 #}
-                        {# <td>{{ user[0] }}</td> #} {# ★削除またはコメントアウト★ #}
-                        {# <td>{{ user[1] }}</td> #} {# ★削除またはコメントアウト★ #}
+                        {# <td>{{ user[0] }}</td> #} {# データベースのIDデータ（例: 1, 4）を非表示 #}
+                        {# <td>{{ user[1] }}</td> #} {# ユーザーIDデータ（例: Yokoyama, tathunami）を非表示 #}
                         <td>{% if user[2] %}はい{% else %}いいえ{% endif %}</td>
                         <td>
-                            {# 削除ボタンの action には user[0] (ID) が必要なので、ここは変更しない #}
-                            {% if user[0] != current_user.id %}
+                            {% if user[0] != current_user.id %} {# ログイン中の自分自身は削除できないように、user[0] (DBのID)は削除ボタンのactionで参照するため残す #}
                             <form method="POST" action="{{ url_for('admin.delete_user', user_id=user[0]) }}" onsubmit="return confirm('本当にこのユーザーを削除しますか？');" style="display:inline;">
                                 <button type="submit" class="btn btn-danger btn-sm">削除</button>
                             </form>
