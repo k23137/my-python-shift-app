@@ -16,7 +16,6 @@ admin_bp = Blueprint('admin', __name__) # Blueprintを作成
 def settings_auth():
     if not current_user.is_admin:
         flash(_('管理者権限が必要です。'), 'danger')
-        # ★修正点★: url_for('index') -> url_for('shifts.index')
         return redirect(url_for('shifts.index'))
 
     form = AdminPasswordForm()
@@ -28,9 +27,7 @@ def settings_auth():
         conn.close()
 
         if admin_password_hash and check_password_hash(admin_password_hash[0], form.admin_password.data):
-            # 管理者パスワードが正しい場合、設定画面へリダイレクト
-            # ★修正なし（adminブループリント内のsettingsルートなのでOK）★
-            return redirect(url_for('admin.settings')) 
+            return redirect(url_for('admin.settings'))
         else:
             flash(_('管理者パスワードが間違っています。'), 'danger')
     return render_template('settings_auth.html', form=form)
@@ -40,7 +37,6 @@ def settings_auth():
 def settings():
     if not current_user.is_admin:
         flash(_('管理者権限が必要です。'), 'danger')
-        # ★修正点★: url_for('index') -> url_for('shifts.index')
         return redirect(url_for('shifts.index'))
     
     add_user_form = AddUserForm()
@@ -49,14 +45,14 @@ def settings():
         cursor = conn.cursor()
         hashed_password = generate_password_hash(add_user_form.password.data)
         try:
+            # ★修正: full_name を挿入リストに追加★
             cursor.execute(
-                "INSERT INTO users (username, password_hash, is_admin) VALUES (%s, %s, %s)",
-                (add_user_form.username.data, hashed_password, add_user_form.is_admin.data)
+                "INSERT INTO users (username, password_hash, full_name, is_admin) VALUES (%s, %s, %s, %s)",
+                (add_user_form.username.data, hashed_password, add_user_form.full_name.data, add_user_form.is_admin.data)
             )
             conn.commit()
             flash(_('ユーザー "%(username)s" が追加されました！', username=add_user_form.username.data), 'success')
-            # ★修正なし（adminブループリント内のsettingsルートなのでOK）★
-            return redirect(url_for('admin.settings')) 
+            return redirect(url_for('admin.settings'))
         except Exception as e:
             flash(_('ユーザー追加エラー: %(error_message)s', error_message=str(e)), 'danger')
             conn.rollback()
@@ -65,7 +61,8 @@ def settings():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username, is_admin FROM users")
+    # ★修正: full_name も SELECT するように修正★
+    cursor.execute("SELECT id, username, full_name, is_admin FROM users")
     users = cursor.fetchall()
     conn.close()
 
@@ -76,13 +73,11 @@ def settings():
 def delete_user(user_id):
     if not current_user.is_admin:
         flash(_('管理者権限が必要です。'), 'danger')
-        # ★修正点★: url_for('index') -> url_for('shifts.index')
         return redirect(url_for('shifts.index'))
     
     if user_id == current_user.id:
         flash(_('自分自身を削除することはできません。'), 'danger')
-        # ★修正なし（adminブループリント内のsettingsルートなのでOK）★
-        return redirect(url_for('admin.settings')) 
+        return redirect(url_for('admin.settings'))
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -95,5 +90,4 @@ def delete_user(user_id):
         conn.rollback()
     finally:
         conn.close()
-    # ★修正なし（adminブループリント内のsettingsルートなのでOK）★
     return redirect(url_for('admin.settings'))

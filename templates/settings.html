@@ -36,6 +36,15 @@
                         {% endfor %}
                     {% endif %}
                 </div>
+                <div class="form-group">
+                    {{ add_user_form.full_name.label(class="form-control-label") }}
+                    {{ add_user_form.full_name(class="form-control") }}
+                    {% if add_user_form.full_name.errors %}
+                        {% for error in add_user_form.full_name.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    {% endif %}
+                </div>
                 <div class="form-group form-check">
                     {{ add_user_form.is_admin(class="form-check-input") }}
                     {{ add_user_form.is_admin.label(class="form-check-label") }}
@@ -49,9 +58,10 @@
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
-                        <th>No.</th> {# これのみ残す #}
+                        <th>No.</th>
                         {# <th>ID</th> #}           {# データベースのIDヘッダーを非表示 #}
                         <th>ユーザーID</th>       {# ユーザーIDヘッダーは残す #}
+                        <th>名前</th> {# ★追加ヘッダー★ #}
                         <th>管理者</th>
                         <th>操作</th>
                     </tr>
@@ -62,7 +72,8 @@
                         <td>{{ loop.index }}</td> {# No.を表示 #}
                         {# <td>{{ user[0] }}</td> #} {# データベースのIDデータ（例: 1, 4）を非表示 #}
                         <td>{{ user[1] }}</td> {# ユーザーIDデータ（例: Yokoyama, tathunami）を表示する #}
-                        <td>{% if user[2] %}はい{% else %}いいえ{% endif %}</td>
+                        <td>{{ user[2] }}</td> {# ★追加: 名前を表示（user[2]がfull_nameになる）★ #}
+                        <td>{% if user[3] %}はい{% else %}いいえ{% endif %}</td> {# ★is_adminのインデックスがuser[3]に変わる★ #}
                         <td>
                             {% if user[0] != current_user.id %} {# ログイン中の自分自身は削除できないように、user[0] (DBのID)は削除ボタンのactionで参照するため残す #}
                             <form method="POST" action="{{ url_for('admin.delete_user', user_id=user[0]) }}" onsubmit="return confirm('本当にこのユーザーを削除しますか？');" style="display:inline;">

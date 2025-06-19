@@ -16,17 +16,17 @@ def login():
     if form.validate_on_submit():
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, password_hash, is_admin FROM users WHERE username = %s", (form.username.data,))
+        # ★修正点★: SELECT文に full_name, is_admin を追加
+        cursor.execute("SELECT id, username, password_hash, full_name, is_admin FROM users WHERE username = %s", (form.username.data,))
         user_data = cursor.fetchone()
         conn.close()
 
         if user_data and check_password_hash(user_data[2], form.password.data):
-            user = User(*user_data)
+            user = User(*user_data) # ここで取得したuser_dataがUserクラスのコンストラクタに渡される
             login_user(user)
             flash(_('ログインしました！'), 'success')
             next_page = request.args.get('next')
-            # ★修正点★: url_for('index') -> url_for('shifts.index')
-            return redirect(next_page or url_for('shifts.index')) 
+            return redirect(next_page or url_for('shifts.index'))
         else:
             flash(_('無効なユーザーIDまたはパスワードです。'), 'danger')
     return render_template('login.html', form=form)

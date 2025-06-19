@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, url_for
 from flask_login import login_required, current_user
 from datetime import date, timedelta
 
@@ -9,13 +9,12 @@ from config import STAFF_NAMES # config.pyからSTAFF_NAMESをインポート
 
 shifts_bp = Blueprint('shifts', __name__) # Blueprintを作成
 
-# --- ヘルパー関数 ---
-# get_day_of_week_jp は format_date が代替するので不要
-
 @shifts_bp.route('/')
 @login_required
 def index():
-    return render_template('index.html', staff_names=STAFF_NAMES)
+    # ★修正点★: settings_authのURLを直接渡す
+    settings_auth_url = url_for('admin.settings_auth')
+    return render_template('index.html', staff_names=STAFF_NAMES, url_for_admin_settings_auth=settings_auth_url)
 
 @shifts_bp.route('/api/initial_data', methods=['GET'])
 @login_required
@@ -29,7 +28,7 @@ def get_initial_data():
 @login_required
 def generate_shift():
     data = request.get_json()
-    start_date_str = data.get('startDate') # <-- ここで取得しています
+    start_date_str = data.get('startDate')
 
     user_id = current_user.id
 
@@ -48,13 +47,10 @@ def generate_shift():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # 既存のシフトを削除
         cursor.execute("DELETE FROM shift_entries WHERE date_str >= %s AND date_str <= %s AND user_id = %s", (start_date_str, end_date.isoformat(), user_id))
 
-        # ★修正点★: currentDate を current_date に統一し、初期化をここで行う
-        current_date = start_date 
+        current_date = start_date
 
-        # 挿入するデータをリストにためる
         shifts_to_insert = [] 
         last_written_date_obj = None
 
@@ -71,13 +67,11 @@ def generate_shift():
                 pass 
                 
             for staff in STAFF_NAMES:
-                # データを直接挿入せず、リストに追加
                 shifts_to_insert.append((current_date.isoformat(), staff, '', user_id))
 
             last_written_date_obj = current_date
             current_date += timedelta(days=1)
 
-        # リストにたまったデータを一度の操作で挿入
         if shifts_to_insert:
             cursor.executemany(
                 "INSERT INTO shift_entries (date_str, staff_name, status, user_id) VALUES (%s, %s, %s, %s)",
@@ -170,7 +164,7 @@ def update_checkbox():
         cursor = conn.cursor()
         
         cursor.execute("UPDATE shift_entries SET status = %s WHERE date_str = %s AND staff_name = %s AND user_id = %s",
-                      (status, date_str, staff_name, user_id))
+                    (status, date_str, staff_name, user_id))
         conn.commit()
         return jsonify({'success': _('チェックボックスの状態を更新しました。')})
     except Exception as e:

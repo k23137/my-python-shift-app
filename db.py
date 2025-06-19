@@ -2,10 +2,7 @@ import psycopg2
 from urllib.parse import urlparse
 import os
 
-# config.py から Config クラスをインポート
 from config import Config
-
-# init_db 関数内で generate_password_hash を使うため、werkzeug.security を直接インポート
 from werkzeug.security import generate_password_hash
 
 def get_db_connection():
@@ -29,11 +26,13 @@ def init_db(app, admin_username, admin_password):
         conn = get_db_connection()
         cursor = conn.cursor()
         
+        # ★users テーブルに full_name カラムを追加★
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY, 
                 username TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
+                full_name TEXT, -- ★追加: 名前を保存するカラム (NULL許容)★
                 is_admin BOOLEAN NOT NULL DEFAULT FALSE
             )
         ''')
@@ -53,13 +52,14 @@ def init_db(app, admin_username, admin_password):
         # 管理者ユーザーが存在しない場合に自動で作成
         cursor.execute("SELECT COUNT(*) FROM users WHERE is_admin = TRUE")
         if cursor.fetchone()[0] == 0:
-            admin_password_hash = generate_password_hash(admin_password) # 引数から受け取る
+            admin_password_hash = generate_password_hash(admin_password)
+            # ★管理者ユーザーの初期名を設定★
             cursor.execute(
-                "INSERT INTO users (username, password_hash, is_admin) VALUES (%s, %s, %s)",
-                (admin_username, admin_password_hash, True) # 引数から受け取る
+                "INSERT INTO users (username, password_hash, full_name, is_admin) VALUES (%s, %s, %s, %s)", 
+                (admin_username, admin_password_hash, "管理者", True) # ★名前も挿入★
             )
             conn.commit()
-            print(f"管理者ユーザー '{admin_username}' を作成しました。パスワードは '{admin_password}' です。")
+            print(f"管理者ユーザー '{admin_username}' (名前: '管理者') を作成しました。パスワードは '{admin_password}' です。")
             print("本番環境ではパスワードを変更してください。")
 
     except Exception as e:

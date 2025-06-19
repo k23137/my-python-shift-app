@@ -56,6 +56,16 @@
         document.addEventListener('click', resetTimeout);
         document.addEventListener('scroll', resetTimeout);
         document.addEventListener('touchstart', resetTimeout); // スマホのタッチ操作
+
+        // Flashメッセージを自動で消す
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.display = 'none'; // または message.remove(); で要素自体を削除
+                }, 5000); // 5秒後に消える (5000ミリ秒)
+            });
+        });
     </script>
 </body>
 </html>

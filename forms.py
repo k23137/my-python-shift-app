@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
+# Regexpをwtforms.validatorsからインポート
+from wtforms.validators import DataRequired, Length, EqualTo, ValidationError, Regexp 
 
 # Flask-Babelの翻訳機能を利用
 from flask_babel import _
@@ -9,21 +10,22 @@ from flask_babel import _
 from db import get_db_connection
 
 class LoginForm(FlaskForm):
-    username = StringField(_('ユーザーID'), validators=[DataRequired(), Length(min=4, max=25)])
+    username = StringField(_('ユーザーID'), validators=[DataRequired(), Length(min=4, max=25), Regexp('^[a-zA-Z0-9_]+$', message=_('ユーザーIDは英数字とアンダースコアのみ使用できます。'))])
     password = PasswordField(_('パスワード'), validators=[DataRequired(), Length(min=4, max=10)])
     submit = SubmitField(_('ログイン'))
 
 class AddUserForm(FlaskForm):
-    username = StringField(_('ユーザーID'), validators=[DataRequired(), Length(min=4, max=25)])
+    username = StringField(_('ユーザーID'), validators=[DataRequired(), Length(min=4, max=25), Regexp('^[a-zA-Z0-9_]+$', message=_('ユーザーIDは英数字とアンダースコアのみ使用できます。'))])
     password = PasswordField(_('パスワード'), validators=[DataRequired(), Length(min=4, max=10)])
     confirm_password = PasswordField(_('パスワード（確認）'), validators=[DataRequired(), EqualTo('password', message=_('パスワードが一致しません。'))])
+    full_name = StringField(_('名前'), validators=[Length(max=50)]) 
     is_admin = BooleanField(_('管理者として追加'))
     submit = SubmitField(_('ユーザー追加'))
 
     def validate_username(self, username):
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM users WHERE username = %s", (username.data,))
+        cursor.execute("SELECT id FROM users WHERE username = %s", (username.data,)) 
         user = cursor.fetchone()
         conn.close()
         if user:

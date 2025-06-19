@@ -45,7 +45,7 @@ def load_user(user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     # PostgreSQLではプレースホルダーは%s
-    cursor.execute("SELECT id, username, password_hash, is_admin FROM users WHERE id = %s", (user_id,)) 
+    cursor.execute("SELECT id, username, password_hash, full_name, is_admin FROM users WHERE id = %s", (user_id,)) 
     user_data = cursor.fetchone()
     conn.close()
     if user_data:
@@ -70,7 +70,19 @@ app.register_blueprint(admin_bp)
 with app.app_context():
     init_db(app, ADMIN_USERNAME, ADMIN_PASSWORD) # appインスタンスとADMIN_USERNAME, ADMIN_PASSWORDを渡す
 
+# --- 新しいAPIエンドポイント: ログインユーザー情報を返す ---
+@app.route('/api/user_info', methods=['GET'])
+@login_required
+def get_user_info():
+    """現在ログイン中のユーザー情報を返すAPI"""
+    return jsonify({
+        'id': current_user.id,
+        'username': current_user.username,
+        'fullName': current_user.full_name,
+        'isAdmin': current_user.is_admin
+    })
+
+
 if __name__ == '__main__':
     # 開発用サーバーを実行
-    # debug=True は自動リロード機能などを提供しますが、本番環境ではFalseにしてください
     app.run(debug=True)

@@ -18,7 +18,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             max-width: 800px; /* 広めに設定 */
-            margin: 20px auto;
+            margin: 20px auto; /* 中央寄せと上下マージン */
         }
         h2 {
             text-align: center;
@@ -173,26 +173,33 @@
             <button onclick="generateShift()">シフト生成</button>
             <button onclick="setNextShiftDate()">次のシフト</button>
             <button onclick="clearShift()">全クリア</button>
-            <button onclick="takeShiftScreenshot()">シフトを画像で保存</button> </div>
+            <button onclick="takeShiftScreenshot()">シフトを画像で保存</button>
+        </div>
 
         <div id="loading" class="loading">処理中...</div>
         <div id="message" class="message"></div>
 
-        <div class="shift-table-container" id="shiftTableContainer"> 
-            <table class="shift-table" id="shiftTable">
-                <thead>
-                    <tr>
-                        <th>日付</th>
-                        <th>曜日</th>
-                        {% for staff in staff_names %}
-                        <th>{{ staff }}</th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    </tbody>
-            </table>
-        </div>
+        <div id="fullShiftOutputArea"> 
+            <div class="shift-table-container" id="shiftTableContainer" style="display: none;">
+                <table class="shift-table" id="shiftTable">
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>曜日</th>
+                            {% for staff in staff_names %}
+                            <th>{{ staff }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+
+            <div id="shiftInfoBelowTable" style="text-align: right; margin-top: 15px; font-size: 0.9rem; color: #555; display: none;">
+                <span></span>
+            </div>
+        </div> 
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
@@ -204,6 +211,8 @@
         const shiftTableBody = document.getElementById('shiftTable').getElementsByTagName('tbody')[0];
         const messageDiv = document.getElementById('message');
         const loadingDiv = document.getElementById('loading');
+        const shiftTableContainer = document.getElementById('shiftTableContainer'); 
+        const shiftInfoBelowTable = document.getElementById('shiftInfoBelowTable');
         
         const STAFF_NAMES = {{ staff_names | tojson }};
 
@@ -216,6 +225,23 @@
             const month = String(today.getMonth() + 1).padStart(2, '0');
             const day = String(today.getDate()).padStart(2, '0');
             startDateInput.value = `${year}-${month}-${day}`;
+
+            // ログインユーザーの名前を取得して表示
+            fetch('/api/user_info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.fullName) {
+                        shiftInfoBelowTable.innerHTML = `作成者: ${data.fullName}`;
+                    } else if (data.username) {
+                        shiftInfoBelowTable.innerHTML = `作成者: ${data.username}`;
+                    } else {
+                        shiftInfoBelowTable.innerHTML = `作成者: 未ログイン`;
+                    }
+                })
+                .catch(error => {
+                    console.error('ユーザー情報取得エラー:', error);
+                    shiftInfoBelowTable.innerHTML = 'ユーザー情報取得エラー';
+                });
         });
 
         function showLoading() {
@@ -251,18 +277,21 @@
                 body: JSON.stringify({ startDate: startDate }),
             })
             .then(response => {
-                if (response.redirected) { // ログイン画面へのリダイレクトを検出
+                if (response.redirected) {
                     window.location.href = response.url;
                     return;
                 }
                 return response.json();
             })
             .then(data => {
-                if (data && data.error) { // dataがnullでないことを確認
+                if (data && data.error) {
                     showMessage(data.error, 'error');
                 } else if (data) {
                     showMessage(data.success, 'success');
                     loadShiftData();
+                    // シフト生成成功時にテーブルを表示
+                    shiftTableContainer.style.display = 'block';
+                    shiftInfoBelowTable.style.display = 'block';
                 }
                 hideLoading();
             })
@@ -286,13 +315,27 @@
                     hideLoading();
                     if (data && data.error) {
                         showMessage(data.error, 'error');
+                        // エラーがあれば非表示に
+                        shiftTableContainer.style.display = 'none';
+                        shiftInfoBelowTable.style.display = 'none';
                         return;
                     }
                     renderShiftTable(data);
+                    // データが読み込まれたらテーブルを表示（初期ロード時も含む）
+                    if (data && data.length > 0) {
+                        shiftTableContainer.style.display = 'block';
+                        shiftInfoBelowTable.style.display = 'block';
+                    } else { // データがなければ非表示
+                        shiftTableContainer.style.display = 'none';
+                        shiftInfoBelowTable.style.display = 'none';
+                    }
                 })
                 .catch(error => {
                     hideLoading();
                     showMessage("シフトデータの読み込みに失敗しました: " + error.message, 'error');
+                    // エラーがあれば非表示に
+                    shiftTableContainer.style.display = 'none';
+                    shiftInfoBelowTable.style.display = 'none';
                 });
         }
 
@@ -400,7 +443,7 @@
         }
 
         function clearShift() {
-            if (confirm("シフトデータをすべて削除します。よろしいですか？")) {
+            if (confirm("シフトデータをすべて削除しますか？")) {
                 showLoading();
                 fetch('/api/clear_shift', {
                     method: 'POST'
@@ -418,6 +461,9 @@
                     } else if (data) {
                         showMessage(data.success, 'success');
                         shiftTableBody.innerHTML = '';
+                        // シフトクリア成功時にテーブルを非表示
+                        shiftTableContainer.style.display = 'none';
+                        shiftInfoBelowTable.style.display = 'none';
                     }
                     hideLoading();
                 })
@@ -430,25 +476,37 @@
             }
         }
 
-        // ★スクリーンショット機能の追加★
+        // ★スクリーンショット機能の追加と修正★
         function takeShiftScreenshot() {
             showLoading();
-            const input = document.getElementById('shiftTableContainer'); // スクリーンショットを撮る要素のID
+            const input = document.getElementById('fullShiftOutputArea'); // スクリーンショットを撮る要素のID
             
+            // shiftTableContainer の幅と高さを取得
+            // スクリーンショットの対象が fullShiftOutputArea になったため、input要素のoffsetWdith/Heightを使用
+            const originalWidth = input.offsetWidth;
+            const originalHeight = input.offsetHeight;
+            const padding = 20; // 追加したい余白のピクセル数
+
             html2canvas(input, {
                 scale: 2, // 解像度を上げる (Retinaディスプレイ対応など)
                 logging: false, // コンソールにログを出さない
-                useCORS: true // 外部リソースがある場合に対応
+                useCORS: true, // 外部リソースがある場合に対応
+                // x, y, width, height オプションで余白を含めてレンダリング範囲を拡張
+                x: input.offsetLeft - padding, // 左の余白を含めて開始
+                y: input.offsetTop - padding,  // 上の余白を含めて開始
+                width: originalWidth + (2 * padding), // 元の幅 + 左右の余白
+                height: originalHeight + (2 * padding), // 元の高さ + 上下の余白
+                backgroundColor: '#ffffff' // 余白部分の背景色（白）
             }).then(function(canvas) {
                 // 画像をダウンロード
                 const link = document.createElement('a');
                 link.download = 'シフト表_' + new Date().toISOString().split('T')[0] + '.png';
                 link.href = canvas.toDataURL('image/png');
-                document.body.appendChild(link); // 一時的にDOMに追加
-                link.click(); // クリックしてダウンロードをトリガー
-                document.body.removeChild(link); // リンクを削除
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
 
-                showMessage('シフト表が画像として保存されました！', 'success');
+                showMessage('シフト表が画像として保存されました！ファイルアプリの「ダウンロード」フォルダをご確認ください。写真アプリに保存するには、ファイルアプリから画像をタップし、共有ボタンで「画像を保存」を選択してください。', 'success');
                 hideLoading();
             }).catch(function(error) {
                 showMessage('スクリーンショットの保存に失敗しました: ' + error.message, 'error');
