@@ -101,7 +101,7 @@
         .shift-table td.shift-cell:hover {
             background-color: #e0f2f7;
         }
-        /* ★追加: ○が入ったセルの背景色★ */
+        /*○が入ったセルの背景色★ */
         .shift-table td.shift-cell.active {
             background-color: #e0f7fa;
         }
@@ -139,6 +139,12 @@
         .empty-row td {
             border: none;
         }
+        #shiftInfoBelowTable {
+            text-align: right;
+            margin-top: 15px;
+            font-size: 20px !important;
+            color: #555;
+        }
     </style>
 </head>
 <body>
@@ -173,40 +179,36 @@
             <button onclick="generateShift()">シフト生成</button>
             <button onclick="setNextShiftDate()">次のシフト</button>
             <button onclick="clearShift()">全クリア</button>
-            <button onclick="takeShiftScreenshot()">シフトを画像で保存</button>
-        </div>
+            {# <button onclick="takeShiftScreenshot()">シフトを画像で保存</button> #} </div>
 
         <div id="loading" class="loading">処理中...</div>
         <div id="message" class="message"></div>
 
-        <div id="fullShiftOutputArea"> 
-            <div class="shift-table-container" id="shiftTableContainer" style="display: none;">
-                <table class="shift-table" id="shiftTable">
-                    <thead>
-                        <tr>
-                            <th>日付</th>
-                            <th>曜日</th>
-                            {% for staff in staff_names %}
-                            <th>{{ staff }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
-            </div>
+        <div class="shift-table-container" id="shiftTableContainer"> 
+            <table class="shift-table" id="shiftTable">
+                <thead>
+                    <tr>
+                        <th>日付</th>
+                        <th>曜日</th>
+                        {% for staff in staff_names %}
+                        <th>{{ staff }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
 
-            <div id="shiftInfoBelowTable" style="text-align: right; margin-top: 15px; font-size: 0.9rem; color: #555; display: none;">
-                <span></span>
-            </div>
-        </div> 
+        <div id="shiftInfoBelowTable" style="text-align: right; margin-top: 15px; font-size: 0.9rem; color: #555;">
+            <span></span>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script> 
-    <script>
+    {# <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script> #} <script>
         const startDateInput = document.getElementById('startDate');
         const shiftTableBody = document.getElementById('shiftTable').getElementsByTagName('tbody')[0];
         const messageDiv = document.getElementById('message');
@@ -242,6 +244,10 @@
                     console.error('ユーザー情報取得エラー:', error);
                     shiftInfoBelowTable.innerHTML = 'ユーザー情報取得エラー';
                 });
+            
+            // ★修正: アプリ初期ロード時の表示制御を個別の要素に★
+            shiftTableContainer.style.display = 'none';
+            shiftInfoBelowTable.style.display = 'none';
         });
 
         function showLoading() {
@@ -474,45 +480,6 @@
             } else {
                 showMessage("削除はキャンセルされました。", 'info');
             }
-        }
-
-        // ★スクリーンショット機能の追加と修正★
-        function takeShiftScreenshot() {
-            showLoading();
-            const input = document.getElementById('fullShiftOutputArea'); // スクリーンショットを撮る要素のID
-            
-            // shiftTableContainer の幅と高さを取得
-            // スクリーンショットの対象が fullShiftOutputArea になったため、input要素のoffsetWdith/Heightを使用
-            const originalWidth = input.offsetWidth;
-            const originalHeight = input.offsetHeight;
-            const padding = 20; // 追加したい余白のピクセル数
-
-            html2canvas(input, {
-                scale: 2, // 解像度を上げる (Retinaディスプレイ対応など)
-                logging: false, // コンソールにログを出さない
-                useCORS: true, // 外部リソースがある場合に対応
-                // x, y, width, height オプションで余白を含めてレンダリング範囲を拡張
-                x: input.offsetLeft - padding, // 左の余白を含めて開始
-                y: input.offsetTop - padding,  // 上の余白を含めて開始
-                width: originalWidth + (2 * padding), // 元の幅 + 左右の余白
-                height: originalHeight + (2 * padding), // 元の高さ + 上下の余白
-                backgroundColor: '#ffffff' // 余白部分の背景色（白）
-            }).then(function(canvas) {
-                // 画像をダウンロード
-                const link = document.createElement('a');
-                link.download = 'シフト表_' + new Date().toISOString().split('T')[0] + '.png';
-                link.href = canvas.toDataURL('image/png');
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                showMessage('シフト表が画像として保存されました！ファイルアプリの「ダウンロード」フォルダをご確認ください。写真アプリに保存するには、ファイルアプリから画像をタップし、共有ボタンで「画像を保存」を選択してください。', 'success');
-                hideLoading();
-            }).catch(function(error) {
-                showMessage('スクリーンショットの保存に失敗しました: ' + error.message, 'error');
-                hideLoading();
-                console.error('html2canvas error:', error);
-            });
         }
     </script>
 </body>

@@ -85,4 +85,4 @@ def get_user_info():
 
 if __name__ == '__main__':
     # 開発用サーバーを実行
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
