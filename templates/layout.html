@@ -3,69 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Webシフト管理{% endblock %}</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f0f2f5; }
-        .container { margin-top: 50px; }
-        .flash-message { margin-bottom: 20px; text-align: center; }
-    </style>
+    <title>シフト管理アプリ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-    <div class="container">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('shifts.index') }}">シフト管理</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin.admin_panel') }}">管理パネル</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.logout') }}">ログアウト</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">ログイン</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} flash-message" role="alert">
-                        {{ message }}
-                    </div>
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
         {% block content %}{% endblock %}
-    </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script>
-        // サーバーサイドのタイムアウト時間と同じに設定 (ミリ秒単位)
-        const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5分 = 300000ミリ秒
+    </main>
 
-        let timeoutId; // タイマーのID
-
-        // タイムアウトをリセットする関数
-        function resetTimeout() {
-            clearTimeout(timeoutId); // 既存のタイマーをクリア
-            timeoutId = setTimeout(logoutUser, SESSION_TIMEOUT_MS); // 新しいタイマーを設定
-        }
-
-        // ログアウト処理を実行する関数
-        function logoutUser() {
-            // アラートを表示して、ユーザーをログアウトページへリダイレクト
-            alert('5分間操作がなかったため、自動的にログアウトしました。');
-            // 現在のパスをnextパラメータとして渡し、ログイン後に元のページに戻れるように
-            window.location.href = "{{ url_for('auth.logout', next=request.path) }}"; 
-        }
-
-        // ページが読み込まれたらタイマーをセット
-        document.addEventListener('DOMContentLoaded', resetTimeout);
-
-        // ユーザーの操作（マウス移動、キーボード入力、タッチ）があればタイマーをリセット
-        document.addEventListener('mousemove', resetTimeout);
-        document.addEventListener('keypress', resetTimeout);
-        document.addEventListener('click', resetTimeout);
-        document.addEventListener('scroll', resetTimeout);
-        document.addEventListener('touchstart', resetTimeout); // スマホのタッチ操作
-
-        // Flashメッセージを自動で消す
-        document.addEventListener('DOMContentLoaded', function() {
-            const flashMessages = document.querySelectorAll('.flash-message');
-            flashMessages.forEach(function(message) {
-                setTimeout(function() {
-                    message.style.display = 'none'; // または message.remove(); で要素自体を削除
-                }, 5000); // 5秒後に消える (5000ミリ秒)
-            });
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

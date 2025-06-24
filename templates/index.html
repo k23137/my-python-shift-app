@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webシフト管理</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>シフト管理アプリ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -36,7 +38,7 @@
         .control-panel {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 10px; 
             justify-content: center;
             margin-bottom: 25px;
             align-items: center;
@@ -60,12 +62,19 @@
             font-size: 1rem;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            margin: 5px; 
         }
         .control-panel button:hover {
             background-color: #0056b3;
         }
         .control-panel button:active {
             background-color: #004085;
+        }
+        .btn-info {
+            background-color: #17a2b8;
+        }
+        .btn-info:hover {
+            background-color: #138496;
         }
         .shift-table-container {
             overflow-x: auto;
@@ -89,7 +98,6 @@
             background-color: #e9ecef;
             color: #333;
         }
-        /* クリック可能なセルのスタイル */
         .shift-table td.shift-cell {
             cursor: pointer;
             user-select: none;
@@ -101,7 +109,6 @@
         .shift-table td.shift-cell:hover {
             background-color: #e0f2f7;
         }
-        /*○が入ったセルの背景色★ */
         .shift-table td.shift-cell.active {
             background-color: #e0f7fa;
         }
@@ -148,7 +155,7 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="capture-area">
         <div class="user-info">
             {% if current_user.is_authenticated %}
                 こんにちは、{{ current_user.username }}さん！
@@ -179,7 +186,8 @@
             <button onclick="generateShift()">シフト生成</button>
             <button onclick="setNextShiftDate()">次のシフト</button>
             <button onclick="clearShift()">全クリア</button>
-            {# <button onclick="takeShiftScreenshot()">シフトを画像で保存</button> #} </div>
+            <button onclick="takeShiftScreenshot()" class="btn-info">シフトを画像で保存</button> 
+        </div>
 
         <div id="loading" class="loading">処理中...</div>
         <div id="message" class="message"></div>
@@ -200,7 +208,7 @@
             </table>
         </div>
 
-        <div id="shiftInfoBelowTable" style="text-align: right; margin-top: 15px; font-size: 0.9rem; color: #555;">
+        <div id="shiftInfoBelowTable" style="text-align: right; margin-top: 15px; font-size: 0.9rem; color: #555; text-decoration: underline;">
             <span></span>
         </div>
     </div>
@@ -208,7 +216,7 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    {# <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script> #} <script>
+    <script>
         const startDateInput = document.getElementById('startDate');
         const shiftTableBody = document.getElementById('shiftTable').getElementsByTagName('tbody')[0];
         const messageDiv = document.getElementById('message');
@@ -219,23 +227,20 @@
         const STAFF_NAMES = {{ staff_names | tojson }};
 
         document.addEventListener('DOMContentLoaded', function() {
-            // 初期ロード時にシフトデータを表示
             loadShiftData();
-            // デフォルトの開始日を今日に設定
             const today = new Date();
             const year = today.getFullYear();
             const month = String(today.getMonth() + 1).padStart(2, '0');
             const day = String(today.getDate()).padStart(2, '0');
             startDateInput.value = `${year}-${month}-${day}`;
 
-            // ログインユーザーの名前を取得して表示
             fetch('/api/user_info')
                 .then(response => response.json())
                 .then(data => {
                     if (data.fullName) {
-                        shiftInfoBelowTable.innerHTML = `作成者: ${data.fullName}`;
+                        shiftInfoBelowTable.innerHTML = `名前: ${data.fullName}`;
                     } else if (data.username) {
-                        shiftInfoBelowTable.innerHTML = `作成者: ${data.username}`;
+                        shiftInfoBelowTable.innerHTML = `名前: ${data.username}`;
                     } else {
                         shiftInfoBelowTable.innerHTML = `作成者: 未ログイン`;
                     }
@@ -245,10 +250,35 @@
                     shiftInfoBelowTable.innerHTML = 'ユーザー情報取得エラー';
                 });
             
-            // ★修正: アプリ初期ロード時の表示制御を個別の要素に★
             shiftTableContainer.style.display = 'none';
             shiftInfoBelowTable.style.display = 'none';
         });
+
+        function takeShiftScreenshot() {
+            showMessage("スクリーンショットを生成中です...", 'info');
+            const captureArea = document.getElementById('capture-area');
+
+            html2canvas(captureArea, {
+                scale: 2,
+                useCORS: true,
+                onclone: (document) => {
+                    const clonedPanel = document.querySelector('.control-panel');
+                    if (clonedPanel) {
+                        clonedPanel.style.display = 'none';
+                    }
+                }
+            }).then(canvas => {
+                const link = document.createElement('a');
+                const date = startDateInput.value || 'shift';
+                link.download = `shift-schedule-${date}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                showMessage("スクリーンショットが保存されました。", 'success');
+            }).catch(err => {
+                console.error("oops, something went wrong!", err);
+                showMessage("スクリーンショットの生成に失敗しました。", 'error');
+            });
+        }
 
         function showLoading() {
             loadingDiv.style.display = 'block';
@@ -295,7 +325,6 @@
                 } else if (data) {
                     showMessage(data.success, 'success');
                     loadShiftData();
-                    // シフト生成成功時にテーブルを表示
                     shiftTableContainer.style.display = 'block';
                     shiftInfoBelowTable.style.display = 'block';
                 }
@@ -321,17 +350,15 @@
                     hideLoading();
                     if (data && data.error) {
                         showMessage(data.error, 'error');
-                        // エラーがあれば非表示に
                         shiftTableContainer.style.display = 'none';
                         shiftInfoBelowTable.style.display = 'none';
                         return;
                     }
                     renderShiftTable(data);
-                    // データが読み込まれたらテーブルを表示（初期ロード時も含む）
                     if (data && data.length > 0) {
                         shiftTableContainer.style.display = 'block';
                         shiftInfoBelowTable.style.display = 'block';
-                    } else { // データがなければ非表示
+                    } else {
                         shiftTableContainer.style.display = 'none';
                         shiftInfoBelowTable.style.display = 'none';
                     }
@@ -339,7 +366,6 @@
                 .catch(error => {
                     hideLoading();
                     showMessage("シフトデータの読み込みに失敗しました: " + error.message, 'error');
-                    // エラーがあれば非表示に
                     shiftTableContainer.style.display = 'none';
                     shiftInfoBelowTable.style.display = 'none';
                 });
@@ -467,7 +493,6 @@
                     } else if (data) {
                         showMessage(data.success, 'success');
                         shiftTableBody.innerHTML = '';
-                        // シフトクリア成功時にテーブルを非表示
                         shiftTableContainer.style.display = 'none';
                         shiftInfoBelowTable.style.display = 'none';
                     }
