@@ -12,7 +12,6 @@ shifts_bp = Blueprint('shifts', __name__) # Blueprintを作成
 @shifts_bp.route('/')
 @login_required
 def index():
-    # ★修正点★: settings_authのURLを直接渡す
     settings_auth_url = url_for('admin.settings_auth')
     return render_template('index.html', staff_names=STAFF_NAMES, url_for_admin_settings_auth=settings_auth_url)
 
@@ -47,7 +46,9 @@ def generate_shift():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute("DELETE FROM shift_entries WHERE date_str >= %s AND date_str <= %s AND user_id = %s", (start_date_str, end_date.isoformat(), user_id))
+        # ★★★ 修正箇所 ★★★
+        # 指定期間だけでなく、ユーザーの全シフトデータを削除する
+        cursor.execute("DELETE FROM shift_entries WHERE user_id = %s", (user_id,))
 
         current_date = start_date
 
