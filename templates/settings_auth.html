@@ -6,16 +6,20 @@
         <p class="text-center text-muted">設定画面に進むには管理者パスワードを入力してください。</p>
         <form method="POST" action="{{ url_for('admin.settings_auth') }}">
             {{ form.csrf_token }}
-            <div class="form-group">
+            <div class="form-group mb-3">
                 {{ form.admin_password.label(class="form-control-label") }}
                 {{ form.admin_password(class="form-control") }}
                 {% if form.admin_password.errors %}
                     {% for error in form.admin_password.errors %}
                         <small class="text-danger">{{ error }}</small>
-                    {% endfor %}  {# ★ここを修正しました！ {% for %} を {% endfor %} に変更 #}
+                    {% endfor %}
                 {% endif %}
             </div>
-            {{ form.submit(class="btn btn-warning btn-block") }}
+            
+            <div class="d-grid gap-2">
+                {{ form.submit(class="btn btn-warning") }}
+            </div>
+            
         </form>
     </div>
 {% endblock %}
