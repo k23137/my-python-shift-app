@@ -156,6 +156,9 @@
 </head>
 <body>
     <div class="container" id="capture-area">
+
+        <h2 class="text-center mb-4">Webシフト管理</h2>
+
         <div class="user-info">
             {% if current_user.is_authenticated %}
                 ログインID:{{ current_user.username }}
@@ -177,8 +180,6 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-
-        <h2 class="text-center mb-4">Webシフト管理</h2>
 
         <div class="control-panel">
             <label for="startDate">シフト開始日:</label>
@@ -238,9 +239,9 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.fullName) {
-                        shiftInfoBelowTable.innerHTML = `名前: ${data.fullName}`;
+                        shiftInfoBelowTable.innerHTML = `${data.fullName}`;
                     } else if (data.username) {
-                        shiftInfoBelowTable.innerHTML = `名前: ${data.username}`;
+                        shiftInfoBelowTable.innerHTML = `${data.username}`;
                     } else {
                         shiftInfoBelowTable.innerHTML = `未ログイン`;
                     }
